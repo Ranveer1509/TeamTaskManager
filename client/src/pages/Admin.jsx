@@ -9,17 +9,15 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [updatingId, setUpdatingId] = useState(null); // ✅ FIX
+  const [updatingId, setUpdatingId] = useState(null);
 
-  // Fetch users
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError("");
 
       const res = await getUsers();
-      setUsers(res.data.data);
-
+      setUsers(res?.data?.data || []);
     } catch (err) {
       console.log(err);
       setError(err || "Failed to load users");
@@ -29,17 +27,35 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    if (admin) fetchUsers();
+    if (!admin) return;
+
+    let ignore = false;
+
+    const loadUsers = async () => {
+      try {
+        const res = await getUsers();
+        if (!ignore) setUsers(res?.data?.data || []);
+      } catch (err) {
+        console.log(err);
+        if (!ignore) setError(err || "Failed to load users");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadUsers();
+
+    return () => {
+      ignore = true;
+    };
   }, [admin]);
 
-  // Change role
   const changeRole = async (id, role) => {
     try {
-      setUpdatingId(id); // ✅ only this row loading
+      setUpdatingId(id);
 
       await updateUserRole(id, role);
       fetchUsers();
-
     } catch (err) {
       console.log(err);
       setError(err || "Failed to update role");
@@ -48,12 +64,11 @@ export default function Admin() {
     }
   };
 
-  // 🔐 Access protection
   if (!admin) {
     return (
       <Layout>
         <h2 className="text-red-400 text-xl">
-          Access Denied 🚫 (Admin Only)
+          Access Denied (Admin Only)
         </h2>
       </Layout>
     );
@@ -61,13 +76,9 @@ export default function Admin() {
 
   return (
     <Layout>
-      <h1 className="text-3xl font-bold mb-6">
-        Admin Panel 🛠️
-      </h1>
+      <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
 
-      {error && (
-        <p className="text-red-400 mb-4">{error}</p>
-      )}
+      {error && <p className="text-red-400 mb-4">{error}</p>}
 
       {loading ? (
         <p className="text-gray-400">Loading users...</p>
@@ -97,9 +108,7 @@ export default function Admin() {
                   <td>
                     <span
                       className={`px-2 py-1 rounded text-sm ${
-                        u.role === "Admin"
-                          ? "bg-purple-600"
-                          : "bg-gray-600"
+                        u.role === "Admin" ? "bg-purple-600" : "bg-gray-600"
                       }`}
                     >
                       {u.role}

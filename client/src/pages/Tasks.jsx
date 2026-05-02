@@ -27,8 +27,9 @@ export default function Tasks() {
       setError("");
 
       const res = await getTasks();
-      const filtered = res.data.filter(
-        (t) => t.projectId == projectId
+      const data = res?.data?.data || [];
+      const filtered = data.filter(
+        (t) => String(t.projectId) === String(projectId)
       );
       setTasks(filtered);
 
@@ -41,8 +42,31 @@ export default function Tasks() {
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    let ignore = false;
+
+    const loadTasks = async () => {
+      try {
+        const res = await getTasks();
+        if (ignore) return;
+
+        const data = res?.data?.data || [];
+        setTasks(
+          data.filter((t) => String(t.projectId) === String(projectId))
+        );
+      } catch (err) {
+        console.log(err);
+        if (!ignore) setError("Failed to load tasks");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadTasks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [projectId]);
 
   // 👑 CREATE TASK (ADMIN ONLY)
   const handleCreate = async () => {
@@ -53,6 +77,11 @@ export default function Tasks() {
 
     if (!title.trim()) {
       setError("Task title required");
+      return;
+    }
+
+    if (!assignedTo) {
+      setError("Assigned user ID required");
       return;
     }
 
@@ -74,7 +103,7 @@ export default function Tasks() {
 
     } catch (err) {
       console.log(err);
-      setError("Failed to create task");
+      setError(err || "Failed to create task");
     } finally {
       setCreating(false);
     }
@@ -82,8 +111,14 @@ export default function Tasks() {
 
   // ✅ BOTH CAN UPDATE STATUS
   const changeStatus = async (task, status) => {
-    await updateTask(task.id, { status });
-    fetchTasks();
+    try {
+      setError("");
+      await updateTask(task.id, { status });
+      fetchTasks();
+    } catch (err) {
+      console.log(err);
+      setError(err || "Failed to update task");
+    }
   };
 
   // 👑 ASSIGN TASK (ADMIN ONLY)
@@ -98,8 +133,14 @@ export default function Tasks() {
       return;
     }
 
-    await updateTask(task.id, { assignedTo });
-    fetchTasks();
+    try {
+      setError("");
+      await updateTask(task.id, { assignedTo });
+      fetchTasks();
+    } catch (err) {
+      console.log(err);
+      setError(err || "Failed to assign task");
+    }
   };
 
   const isOverdue = (task) => {

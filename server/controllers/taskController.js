@@ -1,12 +1,10 @@
 const Task = require("../models/Task");
 const Project = require("../models/Project");
 
-// CREATE TASK
 exports.createTask = async (req, res) => {
   try {
     const { title, description, projectId, assignedTo, dueDate } = req.body;
 
-    // 1. Validation
     if (!title || !projectId) {
       return res.status(400).json({
         success: false,
@@ -14,7 +12,6 @@ exports.createTask = async (req, res) => {
       });
     }
 
-    // 2. Check if project exists
     const project = await Project.findByPk(projectId);
     if (!project) {
       return res.status(404).json({
@@ -23,13 +20,17 @@ exports.createTask = async (req, res) => {
       });
     }
 
-    // 3. Assign logic
-    const assignee =
-      req.user.role === "Admin" ? assignedTo : req.user.id;
+    const assignee = req.user.role === "Admin" ? assignedTo : req.user.id;
 
-    // 4. Create task
+    if (!assignee) {
+      return res.status(400).json({
+        success: false,
+        message: "Assigned user is required",
+      });
+    }
+
     const task = await Task.create({
-      title,
+      title: title.trim(),
       description,
       projectId,
       assignedTo: assignee,
@@ -40,7 +41,6 @@ exports.createTask = async (req, res) => {
       success: true,
       data: task,
     });
-
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -49,7 +49,6 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// GET TASKS
 exports.getTasks = async (req, res) => {
   try {
     let tasks;
@@ -67,7 +66,6 @@ exports.getTasks = async (req, res) => {
       count: tasks.length,
       data: tasks,
     });
-
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -76,23 +74,20 @@ exports.getTasks = async (req, res) => {
   }
 };
 
-// UPDATE TASK STATUS
 exports.updateTaskStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, assignedTo, title, description, dueDate } = req.body;
 
     const allowedStatus = ["Todo", "In Progress", "Done"];
 
-    // 1. Validate status
-    if (!allowedStatus.includes(status)) {
+    if (status && !allowedStatus.includes(status)) {
       return res.status(400).json({
         success: false,
         message: "Invalid status value",
       });
     }
 
-    // 2. Find task
     const task = await Task.findByPk(id);
     if (!task) {
       return res.status(404).json({
@@ -101,26 +96,28 @@ exports.updateTaskStatus = async (req, res) => {
       });
     }
 
-    // 3. Authorization check
-    if (
-      req.user.role !== "Admin" &&
-      task.assignedTo !== req.user.id
-    ) {
+    if (req.user.role !== "Admin" && task.assignedTo !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: "Not allowed",
       });
     }
 
-    // 4. Update
-    task.status = status;
+    if (status) task.status = status;
+
+    if (req.user.role === "Admin") {
+      if (assignedTo !== undefined) task.assignedTo = assignedTo;
+      if (title !== undefined) task.title = title.trim();
+      if (description !== undefined) task.description = description;
+      if (dueDate !== undefined) task.dueDate = dueDate || null;
+    }
+
     await task.save();
 
     res.json({
       success: true,
       data: task,
     });
-
   } catch (err) {
     res.status(500).json({
       success: false,

@@ -14,31 +14,49 @@ export default function Projects() {
   const navigate = useNavigate();
   const admin = isAdmin();
 
-  // Fetch projects
-  const fetchProjects = async () => {
+  const fetchProjects = async (ignore = false) => {
     try {
       setFetching(true);
       setError("");
 
       const res = await getProjects();
+      if (ignore) return;
 
-      // ✅ SAFE PARSE
       const data = res?.data?.data || [];
       setProjects(Array.isArray(data) ? data : []);
-
     } catch (err) {
       console.log(err);
-      setError(err || "Failed to load projects");
+      if (!ignore) setError(err || "Failed to load projects");
     } finally {
-      setFetching(false);
+      if (!ignore) setFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchProjects();
+    let ignore = false;
+
+    const loadProjects = async () => {
+      try {
+        const res = await getProjects();
+        if (ignore) return;
+
+        const data = res?.data?.data || [];
+        setProjects(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.log(err);
+        if (!ignore) setError(err || "Failed to load projects");
+      } finally {
+        if (!ignore) setFetching(false);
+      }
+    };
+
+    loadProjects();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  // Create project
   const handleCreate = async () => {
     if (!admin) {
       setError("Only Admin can create projects");
@@ -57,8 +75,7 @@ export default function Projects() {
       await createProject({ name: name.trim() });
 
       setName("");
-      fetchProjects();
-
+      await fetchProjects();
     } catch (err) {
       console.log(err);
       setError(err || "Failed to create project");
@@ -71,12 +88,8 @@ export default function Projects() {
     <Layout>
       <h1 className="text-3xl font-bold mb-6">Projects 🚀</h1>
 
-      {/* Error */}
-      {error && (
-        <p className="text-red-400 mb-4">{error}</p>
-      )}
+      {error && <p className="text-red-400 mb-4">{error}</p>}
 
-      {/* 👑 Admin Only */}
       {admin && (
         <div className="flex gap-3 mb-8">
           <input
@@ -88,7 +101,7 @@ export default function Projects() {
 
           <button
             onClick={handleCreate}
-            disabled={loading || !name.trim()} // ✅ UX FIX
+            disabled={loading || !name.trim()}
             className={`px-5 rounded transition ${
               loading || !name.trim()
                 ? "bg-gray-600 cursor-not-allowed"
@@ -100,7 +113,6 @@ export default function Projects() {
         </div>
       )}
 
-      {/* Loading */}
       {fetching ? (
         <p className="text-gray-400">Loading projects...</p>
       ) : projects.length === 0 ? (
