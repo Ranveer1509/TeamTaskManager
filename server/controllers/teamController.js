@@ -2,6 +2,42 @@ const Team = require("../models/Team");
 const User = require("../models/User");
 const Project = require("../models/Project");
 
+exports.getMembers = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id || !req.user.role) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const members = await Team.findAll({
+      include: [
+        {
+          model: User,
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: Project,
+          attributes: ["id", "name"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.json({
+      success: true,
+      count: members.length,
+      data: members,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to fetch team members",
+    });
+  }
+};
+
 exports.addMember = async (req, res) => {
   try {
     const { userId, projectId } = req.body;
