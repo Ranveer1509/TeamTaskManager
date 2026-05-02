@@ -1,4 +1,3 @@
-```js
 const User = require("../models/User");
 
 exports.getAllUsers = async (req, res) => {
@@ -62,4 +61,3 @@ exports.updateUserRole = async (req, res) => {
     });
   }
 };
-```
