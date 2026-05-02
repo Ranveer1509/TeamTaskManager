@@ -30,4 +30,6 @@ const Team = sequelize.define("Team", {
   ],
 });
 
+Team.removeAttribute("id");
+
 module.exports = Team;
