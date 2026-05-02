@@ -4,7 +4,6 @@ module.exports = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    // 1. Check token exists
     if (!authHeader) {
       return res.status(401).json({
         success: false,
@@ -12,21 +11,25 @@ module.exports = (req, res, next) => {
       });
     }
 
-    // 2. Extract token (Bearer TOKEN)
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
       : authHeader;
 
-    // 3. Verify token using ENV
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 4. Attach user to request
+    // ✅ Ensure role exists
+    if (!decoded.role) {
+      return res.status(403).json({
+        success: false,
+        message: "Role missing in token",
+      });
+    }
+
     req.user = decoded;
 
     next();
 
   } catch (err) {
-    // Handle token errors clearly
     if (err.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,

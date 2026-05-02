@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-// SIGNUP
+// ================= SIGNUP =================
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -27,17 +27,18 @@ exports.signup = async (req, res) => {
     // 3. Hash password
     const hash = await bcrypt.hash(password, 10);
 
-    // 4. Create user
+    // 4. Create user (role defaults to Member)
     const user = await User.create({
       name,
       email,
       password: hash,
     });
 
-    // 5. Send response (safe)
+    // 5. Response (safe, no password)
     res.status(201).json({
       success: true,
-      data: {
+      message: "User created successfully",
+      user: {
         id: user.id,
         name: user.name,
         email: user.email,
@@ -53,7 +54,8 @@ exports.signup = async (req, res) => {
   }
 };
 
-// LOGIN
+
+// ================= LOGIN =================
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -75,7 +77,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 3. Check password
+    // 3. Compare password
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({
@@ -84,7 +86,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 4. Check JWT_SECRET exists (important safety)
+    // 4. Ensure JWT_SECRET exists
     if (!process.env.JWT_SECRET) {
       return res.status(500).json({
         success: false,
@@ -92,9 +94,12 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 5. Generate token
+    // 5. Generate token (IMPORTANT: includes role)
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      {
+        id: user.id,
+        role: user.role, // 🔥 REQUIRED FOR RBAC
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -107,6 +112,7 @@ exports.login = async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
+        email: user.email, // ✅ added
         role: user.role,
       },
     });
