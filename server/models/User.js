@@ -5,9 +5,7 @@ const User = sequelize.define("User", {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: {
-      notEmpty: true,
-    },
+    validate: { notEmpty: true },
   },
 
   email: {
@@ -25,7 +23,7 @@ const User = sequelize.define("User", {
     allowNull: false,
     validate: {
       notEmpty: true,
-      len: [6, 100], // minimum 6 chars
+      len: [6, 100],
     },
   },
 
@@ -40,15 +38,21 @@ const User = sequelize.define("User", {
   timestamps: true,
 });
 
-// Import after model definition (safer)
+// Imports
 const Project = require("./Project");
 const Task = require("./Task");
+const Team = require("./Team");
 
-// Relationships
+// 1. Task assignment
 User.hasMany(Task, { foreignKey: "assignedTo", onDelete: "CASCADE" });
 Task.belongsTo(User, { foreignKey: "assignedTo" });
 
+// 2. Project creator
 User.hasMany(Project, { foreignKey: "createdBy", onDelete: "CASCADE" });
 Project.belongsTo(User, { foreignKey: "createdBy" });
+
+// 3. Team (Many-to-Many)
+User.belongsToMany(Project, { through: Team, foreignKey: "userId" });
+Project.belongsToMany(User, { through: Team, foreignKey: "projectId" });
 
 module.exports = User;

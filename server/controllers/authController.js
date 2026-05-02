@@ -7,15 +7,21 @@ exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // 1. Basic validation
+    // 1. Validation
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
     }
 
     // 2. Check existing user
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered",
+      });
     }
 
     // 3. Hash password
@@ -28,16 +34,22 @@ exports.signup = async (req, res) => {
       password: hash,
     });
 
-    // 5. Send safe response (no password)
+    // 5. Send response (safe)
     res.status(201).json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
+      success: true,
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
 
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
@@ -48,30 +60,48 @@ exports.login = async (req, res) => {
 
     // 1. Validation
     if (!email || !password) {
-      return res.status(400).json({ message: "Email & password required" });
+      return res.status(400).json({
+        success: false,
+        message: "Email & password required",
+      });
     }
 
     // 2. Find user
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     // 3. Check password
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
-    // 4. Generate token (USE ENV)
+    // 4. Check JWT_SECRET exists (important safety)
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({
+        success: false,
+        message: "JWT secret not configured",
+      });
+    }
+
+    // 5. Generate token
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    // 5. Send response
+    // 6. Send response
     res.json({
+      success: true,
       message: "Login successful",
       token,
       user: {
@@ -82,6 +112,9 @@ exports.login = async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
