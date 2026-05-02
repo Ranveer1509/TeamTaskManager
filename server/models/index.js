@@ -5,23 +5,55 @@ const Project = require("./Project");
 const Task = require("./Task");
 const Team = require("./Team");
 
-// ================= RELATIONS =================
+// ================= USER - PROJECT =================
+User.hasMany(Project, {
+  foreignKey: "createdBy",
+  onDelete: "CASCADE",
+});
 
-// USER
-User.hasMany(Project, { foreignKey: "createdBy" });
-Project.belongsTo(User, { foreignKey: "createdBy" });
+Project.belongsTo(User, {
+  foreignKey: "createdBy",
+});
 
-// PROJECT - TASK
-Project.hasMany(Task, { foreignKey: "projectId", onDelete: "CASCADE" });
-Task.belongsTo(Project, { foreignKey: "projectId" });
+// ================= PROJECT - TASK =================
+Project.hasMany(Task, {
+  foreignKey: "projectId",
+  onDelete: "CASCADE",
+});
 
-// USER - TEAM
-User.hasMany(Team, { foreignKey: "userId" });
-Team.belongsTo(User, { foreignKey: "userId" });
+Task.belongsTo(Project, {
+  foreignKey: "projectId",
+});
 
-// PROJECT - TEAM
-Project.hasMany(Team, { foreignKey: "projectId" });
-Team.belongsTo(Project, { foreignKey: "projectId" });
+// ================= USER - TASK =================
+User.hasMany(Task, {
+  foreignKey: "assignedTo",
+  onDelete: "CASCADE",
+});
+
+Task.belongsTo(User, {
+  foreignKey: "assignedTo",
+});
+
+// ================= USER - TEAM =================
+User.hasMany(Team, {
+  foreignKey: "userId",
+  onDelete: "CASCADE",
+});
+
+Team.belongsTo(User, {
+  foreignKey: "userId",
+});
+
+// ================= PROJECT - TEAM =================
+Project.hasMany(Team, {
+  foreignKey: "projectId",
+  onDelete: "CASCADE",
+});
+
+Team.belongsTo(Project, {
+  foreignKey: "projectId",
+});
 
 module.exports = {
   sequelize,

@@ -3,6 +3,13 @@ const { Op } = require("sequelize");
 
 exports.getDashboard = async (req, res) => {
   try {
+    if (!req.user || !req.user.id || !req.user.role) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     const where =
       req.user.role === "Admin"
         ? {}
@@ -10,7 +17,6 @@ exports.getDashboard = async (req, res) => {
 
     const now = new Date();
 
-    // Run queries in parallel (faster 🚀)
     const [total, done, inProgress, todo, overdue] = await Promise.all([
       Task.count({ where }),
 
@@ -29,13 +35,16 @@ exports.getDashboard = async (req, res) => {
       Task.count({
         where: {
           ...where,
-          dueDate: { [Op.lt]: now },
+          dueDate: {
+            [Op.ne]: null,
+            [Op.lt]: now,
+          },
           status: { [Op.ne]: "Done" },
         },
       }),
     ]);
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         total,
@@ -45,11 +54,10 @@ exports.getDashboard = async (req, res) => {
         overdue,
       },
     });
-
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Failed to load dashboard",
     });
   }
 };

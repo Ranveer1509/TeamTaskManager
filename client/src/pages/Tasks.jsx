@@ -1,8 +1,7 @@
-import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import { isAdmin } from "../utils/auth";
-
 import {
   getTasks,
   createTask,
@@ -11,7 +10,7 @@ import {
 
 export default function Tasks() {
   const { projectId } = useParams();
-  const admin = isAdmin(); // ✅ FIX
+  const admin = isAdmin();
 
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
@@ -29,13 +28,13 @@ export default function Tasks() {
       const res = await getTasks();
       const data = res?.data?.data || [];
       const filtered = data.filter(
-        (t) => String(t.projectId) === String(projectId)
+        (task) => String(task.projectId) === String(projectId)
       );
-      setTasks(filtered);
 
+      setTasks(filtered);
     } catch (err) {
       console.log(err);
-      setError("Failed to load tasks");
+      setError(err || "Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -47,17 +46,23 @@ export default function Tasks() {
     const loadTasks = async () => {
       try {
         const res = await getTasks();
-        if (ignore) return;
 
-        const data = res?.data?.data || [];
-        setTasks(
-          data.filter((t) => String(t.projectId) === String(projectId))
-        );
+        if (!ignore) {
+          const data = res?.data?.data || [];
+          setTasks(
+            data.filter((task) => String(task.projectId) === String(projectId))
+          );
+        }
       } catch (err) {
         console.log(err);
-        if (!ignore) setError("Failed to load tasks");
+
+        if (!ignore) {
+          setError(err || "Failed to load tasks");
+        }
       } finally {
-        if (!ignore) setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     };
 
@@ -68,19 +73,21 @@ export default function Tasks() {
     };
   }, [projectId]);
 
-  // 👑 CREATE TASK (ADMIN ONLY)
   const handleCreate = async () => {
+    const taskTitle = title.trim();
+    const userId = assignedTo.trim();
+
     if (!admin) {
       setError("Only Admin can create tasks");
       return;
     }
 
-    if (!title.trim()) {
+    if (!taskTitle) {
       setError("Task title required");
       return;
     }
 
-    if (!assignedTo) {
+    if (!userId) {
       setError("Assigned user ID required");
       return;
     }
@@ -90,17 +97,17 @@ export default function Tasks() {
       setCreating(true);
 
       await createTask({
-        title: title.trim(),
+        title: taskTitle,
         projectId,
-        assignedTo: assignedTo || null,
+        assignedTo: Number(userId),
         dueDate: dueDate || null,
       });
 
       setTitle("");
       setAssignedTo("");
       setDueDate("");
-      fetchTasks();
 
+      await fetchTasks();
     } catch (err) {
       console.log(err);
       setError(err || "Failed to create task");
@@ -109,34 +116,39 @@ export default function Tasks() {
     }
   };
 
-  // ✅ BOTH CAN UPDATE STATUS
   const changeStatus = async (task, status) => {
     try {
       setError("");
+
       await updateTask(task.id, { status });
-      fetchTasks();
+      await fetchTasks();
     } catch (err) {
       console.log(err);
       setError(err || "Failed to update task");
     }
   };
 
-  // 👑 ASSIGN TASK (ADMIN ONLY)
   const assignUser = async (task) => {
+    const userId = assignedTo.trim();
+
     if (!admin) {
       setError("Only Admin can assign tasks");
       return;
     }
 
-    if (!assignedTo) {
+    if (!userId) {
       setError("Enter user ID first");
       return;
     }
 
     try {
       setError("");
-      await updateTask(task.id, { assignedTo });
-      fetchTasks();
+
+      await updateTask(task.id, {
+        assignedTo: Number(userId),
+      });
+
+      await fetchTasks();
     } catch (err) {
       console.log(err);
       setError(err || "Failed to assign task");
@@ -150,16 +162,12 @@ export default function Tasks() {
 
   return (
     <Layout>
-      <h1 className="text-3xl font-bold mb-6">Tasks 🧠</h1>
+      <h1 className="text-3xl font-bold mb-6">Tasks</h1>
 
-      {error && (
-        <p className="text-red-400 mb-4">{error}</p>
-      )}
+      {error && <p className="text-red-400 mb-4">{error}</p>}
 
-      {/* 👑 ONLY ADMIN */}
       {admin && (
         <div className="flex gap-3 mb-6 flex-wrap">
-
           <input
             className="p-3 rounded bg-gray-800 border border-gray-700"
             placeholder="Task title"
@@ -183,10 +191,11 @@ export default function Tasks() {
           />
 
           <button
+            type="button"
             onClick={handleCreate}
-            disabled={creating}
+            disabled={creating || !title.trim() || !assignedTo.trim()}
             className={`px-4 rounded ${
-              creating
+              creating || !title.trim() || !assignedTo.trim()
                 ? "bg-gray-600 cursor-not-allowed"
                 : "bg-purple-600 hover:bg-purple-700"
             }`}
@@ -196,17 +205,15 @@ export default function Tasks() {
         </div>
       )}
 
-      {/* Tasks */}
       {loading ? (
         <p className="text-gray-400">Loading tasks...</p>
       ) : tasks.length === 0 ? (
-        <p className="text-gray-400">No tasks yet 🧠</p>
+        <p className="text-gray-400">No tasks yet</p>
       ) : (
-        <div className="grid grid-cols-3 gap-6">
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Column
             title="Todo"
-            tasks={tasks.filter(t => t.status === "Todo")}
+            tasks={tasks.filter((task) => task.status === "Todo")}
             changeStatus={changeStatus}
             assignUser={assignUser}
             isOverdue={isOverdue}
@@ -215,7 +222,7 @@ export default function Tasks() {
 
           <Column
             title="In Progress"
-            tasks={tasks.filter(t => t.status === "In Progress")}
+            tasks={tasks.filter((task) => task.status === "In Progress")}
             changeStatus={changeStatus}
             assignUser={assignUser}
             isOverdue={isOverdue}
@@ -224,50 +231,47 @@ export default function Tasks() {
 
           <Column
             title="Done"
-            tasks={tasks.filter(t => t.status === "Done")}
+            tasks={tasks.filter((task) => task.status === "Done")}
             changeStatus={changeStatus}
             assignUser={assignUser}
             isOverdue={isOverdue}
             admin={admin}
           />
-
         </div>
       )}
     </Layout>
   );
 }
 
-
-// Column
 function Column({ title, tasks, changeStatus, assignUser, isOverdue, admin }) {
   return (
     <div>
       <h2 className="mb-3 text-lg text-gray-300">{title}</h2>
 
-      {tasks.map((t) => (
+      {tasks.map((task) => (
         <div
-          key={t.id}
+          key={task.id}
           className={`p-4 rounded mb-3 ${
-            isOverdue(t)
+            isOverdue(task)
               ? "bg-red-700/30 border border-red-500"
               : "bg-gray-800"
           }`}
         >
-          <p className="font-semibold">{t.title}</p>
+          <p className="font-semibold">{task.title}</p>
 
           <p className="text-sm text-gray-400 mt-1">
-            Assigned: {t.assignedTo || "None"}
+            Assigned: {task.assignedTo || "None"}
           </p>
 
           <p className="text-sm text-gray-400">
-            Due: {t.dueDate || "N/A"}
+            Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}
           </p>
 
           <div className="flex gap-2 mt-3 flex-wrap">
-
             {title === "Todo" && (
               <button
-                onClick={() => changeStatus(t, "In Progress")}
+                type="button"
+                onClick={() => changeStatus(task, "In Progress")}
                 className="text-yellow-400 text-sm"
               >
                 Start
@@ -276,23 +280,23 @@ function Column({ title, tasks, changeStatus, assignUser, isOverdue, admin }) {
 
             {title === "In Progress" && (
               <button
-                onClick={() => changeStatus(t, "Done")}
+                type="button"
+                onClick={() => changeStatus(task, "Done")}
                 className="text-green-400 text-sm"
               >
                 Complete
               </button>
             )}
 
-            {/* 👑 ADMIN ONLY */}
             {admin && (
               <button
-                onClick={() => assignUser(t)}
+                type="button"
+                onClick={() => assignUser(task)}
                 className="text-blue-400 text-sm"
               >
                 Assign
               </button>
             )}
-
           </div>
         </div>
       ))}

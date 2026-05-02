@@ -15,8 +15,10 @@ export default function Signup() {
   const navigate = useNavigate();
 
   const handleSignup = async () => {
-    // 🔍 Validation
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+    const name = form.name.trim();
+    const email = form.email.trim();
+
+    if (!name || !email || !form.password) {
       setError("All fields are required");
       return;
     }
@@ -31,32 +33,28 @@ export default function Signup() {
       setLoading(true);
 
       await signup({
-        name: form.name.trim(),
-        email: form.email.trim(),
+        name,
+        email,
         password: form.password,
       });
 
-      // ✅ Redirect after success
-      navigate("/");
-
+      navigate("/", { replace: true });
     } catch (err) {
-      // ⚠️ Your API returns string error
       setError(err || "Signup failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // ⌨️ Enter key support
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleSignup();
+    if (e.key === "Enter" && !loading) {
+      handleSignup();
+    }
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white">
-
-      <div className="backdrop-blur-lg bg-white/10 border border-white/20 p-8 rounded-2xl shadow-2xl w-96">
-
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white px-4">
+      <div className="backdrop-blur-lg bg-white/10 border border-white/20 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
         <h2 className="text-3xl font-bold mb-6 text-center">
           Create Account
         </h2>
@@ -67,7 +65,6 @@ export default function Signup() {
           </div>
         )}
 
-        {/* Name */}
         <input
           placeholder="Name"
           value={form.name}
@@ -78,7 +75,6 @@ export default function Signup() {
           }
         />
 
-        {/* Email */}
         <input
           type="email"
           placeholder="Email"
@@ -90,7 +86,6 @@ export default function Signup() {
           }
         />
 
-        {/* Password */}
         <input
           type="password"
           placeholder="Password"
@@ -102,8 +97,8 @@ export default function Signup() {
           }
         />
 
-        {/* Button */}
         <button
+          type="button"
           onClick={handleSignup}
           disabled={loading}
           className={`w-full p-3 rounded-lg font-semibold transition ${
@@ -115,12 +110,15 @@ export default function Signup() {
           {loading ? "Creating..." : "Signup"}
         </button>
 
-        {/* Redirect */}
-        <p
-          onClick={() => navigate("/")}
-          className="text-center mt-4 text-sm text-gray-300 cursor-pointer hover:text-white"
-        >
-          Already have an account? Login
+        <p className="text-center mt-4 text-sm text-gray-300">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="hover:text-white"
+          >
+            Login
+          </button>
         </p>
       </div>
     </div>

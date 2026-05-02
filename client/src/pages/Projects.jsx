@@ -14,21 +14,20 @@ export default function Projects() {
   const navigate = useNavigate();
   const admin = isAdmin();
 
-  const fetchProjects = async (ignore = false) => {
+  const fetchProjects = async () => {
     try {
       setFetching(true);
       setError("");
 
       const res = await getProjects();
-      if (ignore) return;
-
       const data = res?.data?.data || [];
+
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log(err);
-      if (!ignore) setError(err || "Failed to load projects");
+      setError(err || "Failed to load projects");
     } finally {
-      if (!ignore) setFetching(false);
+      setFetching(false);
     }
   };
 
@@ -38,15 +37,21 @@ export default function Projects() {
     const loadProjects = async () => {
       try {
         const res = await getProjects();
-        if (ignore) return;
 
-        const data = res?.data?.data || [];
-        setProjects(Array.isArray(data) ? data : []);
+        if (!ignore) {
+          const data = res?.data?.data || [];
+          setProjects(Array.isArray(data) ? data : []);
+        }
       } catch (err) {
         console.log(err);
-        if (!ignore) setError(err || "Failed to load projects");
+
+        if (!ignore) {
+          setError(err || "Failed to load projects");
+        }
       } finally {
-        if (!ignore) setFetching(false);
+        if (!ignore) {
+          setFetching(false);
+        }
       }
     };
 
@@ -58,12 +63,14 @@ export default function Projects() {
   }, []);
 
   const handleCreate = async () => {
+    const projectName = name.trim();
+
     if (!admin) {
       setError("Only Admin can create projects");
       return;
     }
 
-    if (!name.trim()) {
+    if (!projectName) {
       setError("Project name required");
       return;
     }
@@ -72,7 +79,7 @@ export default function Projects() {
       setError("");
       setLoading(true);
 
-      await createProject({ name: name.trim() });
+      await createProject({ name: projectName });
 
       setName("");
       await fetchProjects();
@@ -86,23 +93,24 @@ export default function Projects() {
 
   return (
     <Layout>
-      <h1 className="text-3xl font-bold mb-6">Projects 🚀</h1>
+      <h1 className="text-3xl font-bold mb-6">Projects</h1>
 
       {error && <p className="text-red-400 mb-4">{error}</p>}
 
       {admin && (
-        <div className="flex gap-3 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <input
-            className="p-3 rounded bg-gray-800 border border-gray-700 w-64 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="p-3 rounded bg-gray-800 border border-gray-700 w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="Project name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
           <button
+            type="button"
             onClick={handleCreate}
             disabled={loading || !name.trim()}
-            className={`px-5 rounded transition ${
+            className={`px-5 py-3 rounded transition ${
               loading || !name.trim()
                 ? "bg-gray-600 cursor-not-allowed"
                 : "bg-purple-600 hover:bg-purple-700"
@@ -116,14 +124,15 @@ export default function Projects() {
       {fetching ? (
         <p className="text-gray-400">Loading projects...</p>
       ) : projects.length === 0 ? (
-        <p className="text-gray-400">No projects yet 🚀</p>
+        <p className="text-gray-400">No projects yet</p>
       ) : (
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {projects.map((p) => (
-            <div
+            <button
+              type="button"
               key={p.id}
               onClick={() => navigate(`/tasks/${p.id}`)}
-              className="bg-gray-800 p-5 rounded-xl shadow cursor-pointer hover:scale-105 hover:bg-gray-700 transition"
+              className="bg-gray-800 p-5 rounded-xl shadow cursor-pointer hover:scale-105 hover:bg-gray-700 transition text-left"
             >
               <h2 className="text-xl font-semibold">{p.name}</h2>
 
@@ -134,7 +143,7 @@ export default function Projects() {
               <p className="text-purple-400 text-sm mt-4">
                 View Tasks →
               </p>
-            </div>
+            </button>
           ))}
         </div>
       )}

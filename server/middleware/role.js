@@ -1,20 +1,24 @@
 module.exports = (allowedRoles) => {
   return (req, res, next) => {
     try {
-      // 1. Check if user exists
-      if (!req.user) {
+      if (!req.user || !req.user.role) {
         return res.status(401).json({
           success: false,
-          message: "Unauthorized: No user data",
+          message: "Unauthorized",
         });
       }
 
-      // 2. Convert single role to array
       const roles = Array.isArray(allowedRoles)
         ? allowedRoles
         : [allowedRoles];
 
-      // 3. Check permission
+      if (roles.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "No roles configured for this route",
+        });
+      }
+
       if (!roles.includes(req.user.role)) {
         return res.status(403).json({
           success: false,
@@ -22,12 +26,11 @@ module.exports = (allowedRoles) => {
         });
       }
 
-      next();
-
+      return next();
     } catch (err) {
       return res.status(500).json({
         success: false,
-        message: err.message,
+        message: err.message || "Role check failed",
       });
     }
   };

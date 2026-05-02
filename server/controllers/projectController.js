@@ -4,14 +4,22 @@ exports.createProject = async (req, res) => {
   try {
     let { name, description } = req.body;
 
-    if (!name || !name.trim()) {
+    name = name?.trim();
+    description = description?.trim() || "";
+
+    if (!name) {
       return res.status(400).json({
         success: false,
         message: "Project name is required",
       });
     }
 
-    name = name.trim();
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
     const existing = await Project.findOne({ where: { name } });
     if (existing) {
@@ -23,7 +31,7 @@ exports.createProject = async (req, res) => {
 
     const project = await Project.create({
       name,
-      description: description || "",
+      description,
       createdBy: req.user.id,
     });
 
@@ -37,7 +45,7 @@ exports.createProject = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to create project",
+      message: err.message || "Failed to create project",
     });
   }
 };
@@ -58,7 +66,7 @@ exports.getProjects = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch projects",
+      message: err.message || "Failed to fetch projects",
     });
   }
 };

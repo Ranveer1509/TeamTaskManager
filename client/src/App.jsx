@@ -6,48 +6,94 @@ import Tasks from "./pages/Tasks";
 import Signup from "./pages/Signup";
 import Team from "./pages/Team";
 import Admin from "./pages/Admin";
-import { isLoggedIn } from "./utils/auth"; // ✅ IMPORT FIX
+import { isLoggedIn, isAdmin } from "./utils/auth";
 
-// 🔐 Protected Route
 function PrivateRoute({ children }) {
-  return isLoggedIn()
-    ? children
-    : <Navigate to="/" replace />;
+  return isLoggedIn() ? children : <Navigate to="/" replace />;
 }
 
-// 🔓 Public Route
 function PublicRoute({ children }) {
-  return isLoggedIn()
-    ? <Navigate to="/dashboard" replace />
-    : children;
+  return isLoggedIn() ? <Navigate to="/dashboard" replace /> : children;
+}
+
+function AdminRoute({ children }) {
+  if (!isLoggedIn()) {
+    return <Navigate to="/" replace />;
+  }
+
+  return isAdmin() ? children : <Navigate to="/dashboard" replace />;
 }
 
 function App() {
   return (
     <Routes>
-
-      {/* Public */}
-      <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-
-      {/* Protected */}
-      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-      <Route path="/projects" element={<PrivateRoute><Projects /></PrivateRoute>} />
-      <Route path="/tasks/:projectId" element={<PrivateRoute><Tasks /></PrivateRoute>} />
-      <Route path="/team" element={<PrivateRoute><Team /></PrivateRoute>} />
-      <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
-
-      {/* Redirect */}
       <Route
-        path="*"
+        path="/"
         element={
-          <Navigate
-            to={isLoggedIn() ? "/dashboard" : "/"}
-            replace
-          />
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
         }
       />
 
+      <Route
+        path="/signup"
+        element={
+          <PublicRoute>
+            <Signup />
+          </PublicRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/projects"
+        element={
+          <PrivateRoute>
+            <Projects />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/tasks/:projectId"
+        element={
+          <PrivateRoute>
+            <Tasks />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/team"
+        element={
+          <AdminRoute>
+            <Team />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <Admin />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="*"
+        element={<Navigate to={isLoggedIn() ? "/dashboard" : "/"} replace />}
+      />
     </Routes>
   );
 }

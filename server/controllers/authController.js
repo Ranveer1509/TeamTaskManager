@@ -5,9 +5,11 @@ const jwt = require("jsonwebtoken");
 // ================= SIGNUP =================
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    let { name, email, password } = req.body;
 
-    // 1. Validation
+    name = name?.trim();
+    email = email?.trim().toLowerCase();
+
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -15,7 +17,13 @@ exports.signup = async (req, res) => {
       });
     }
 
-    // 2. Check existing user
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({
@@ -24,18 +32,15 @@ exports.signup = async (req, res) => {
       });
     }
 
-    // 3. Hash password
     const hash = await bcrypt.hash(password, 10);
 
-    // 4. Create user (role defaults to Member)
     const user = await User.create({
       name,
       email,
       password: hash,
     });
 
-    // 5. Response (safe, no password)
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "User created successfully",
       user: {
@@ -45,39 +50,36 @@ exports.signup = async (req, res) => {
         role: user.role,
       },
     });
-
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Signup failed",
     });
   }
 };
 
-
 // ================= LOGIN =================
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
-    // 1. Validation
+    email = email?.trim().toLowerCase();
+
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email & password required",
+        message: "Email and password required",
       });
     }
 
-    // 2. Find user
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(404).json({
+      return res.status(401).json({
         success: false,
-        message: "User not found",
+        message: "Invalid credentials",
       });
     }
 
-    // 3. Compare password
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({
@@ -86,7 +88,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 4. Ensure JWT_SECRET exists
     if (!process.env.JWT_SECRET) {
       return res.status(500).json({
         success: false,
@@ -94,33 +95,30 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 5. Generate token (IMPORTANT: includes role)
     const token = jwt.sign(
       {
         id: user.id,
-        role: user.role, // 🔥 REQUIRED FOR RBAC
+        role: user.role,
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    // 6. Send response
-    res.json({
+    return res.json({
       success: true,
       message: "Login successful",
       token,
       user: {
         id: user.id,
         name: user.name,
-        email: user.email, // ✅ added
+        email: user.email,
         role: user.role,
       },
     });
-
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Login failed",
     });
   }
 };

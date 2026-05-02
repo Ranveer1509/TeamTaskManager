@@ -7,16 +7,19 @@ const Task = sequelize.define("Task", {
     allowNull: false,
     validate: {
       notEmpty: true,
+      len: [2, 150],
     },
   },
 
   description: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
+    defaultValue: "",
   },
 
   status: {
     type: DataTypes.STRING,
+    allowNull: false,
     defaultValue: "Todo",
     validate: {
       isIn: [["Todo", "In Progress", "Done"]],
@@ -38,7 +41,7 @@ const Task = sequelize.define("Task", {
     allowNull: true,
   },
 }, {
-  timestamps: true, // adds createdAt, updatedAt
+  timestamps: true,
 });
 
 module.exports = Task;

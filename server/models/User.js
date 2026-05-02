@@ -5,7 +5,10 @@ const User = sequelize.define("User", {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: { notEmpty: true },
+    validate: {
+      notEmpty: true,
+      len: [2, 100],
+    },
   },
 
   email: {
@@ -23,12 +26,13 @@ const User = sequelize.define("User", {
     allowNull: false,
     validate: {
       notEmpty: true,
-      len: [6, 100],
+      len: [6, 255],
     },
   },
 
   role: {
     type: DataTypes.STRING,
+    allowNull: false,
     defaultValue: "Member",
     validate: {
       isIn: [["Admin", "Member"]],
@@ -36,6 +40,12 @@ const User = sequelize.define("User", {
   },
 }, {
   timestamps: true,
+  hooks: {
+    beforeValidate(user) {
+      if (user.name) user.name = user.name.trim();
+      if (user.email) user.email = user.email.trim().toLowerCase();
+    },
+  },
 });
 
 module.exports = User;

@@ -7,7 +7,7 @@ export default function Admin() {
   const admin = isAdmin();
 
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(admin);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
 
@@ -53,9 +53,10 @@ export default function Admin() {
   const changeRole = async (id, role) => {
     try {
       setUpdatingId(id);
+      setError("");
 
       await updateUserRole(id, role);
-      fetchUsers();
+      await fetchUsers();
     } catch (err) {
       console.log(err);
       setError(err || "Failed to update role");
@@ -117,6 +118,7 @@ export default function Admin() {
 
                   <td>
                     <button
+                      type="button"
                       disabled={updatingId === u.id}
                       onClick={() =>
                         changeRole(

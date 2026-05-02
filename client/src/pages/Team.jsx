@@ -4,7 +4,7 @@ import { addTeamMember } from "../services/api";
 import { isAdmin } from "../utils/auth";
 
 export default function Team() {
-  const admin = isAdmin(); // ✅ RBAC
+  const admin = isAdmin();
 
   const [userId, setUserId] = useState("");
   const [projectId, setProjectId] = useState("");
@@ -12,17 +12,20 @@ export default function Team() {
   const [message, setMessage] = useState("");
 
   const addMember = async () => {
+    const selectedUserId = userId.trim();
+    const selectedProjectId = projectId.trim();
+
     if (!admin) {
-      setMessage("Only Admin can add members ❌");
+      setMessage("Only Admin can add members");
       return;
     }
 
-    if (!userId || !projectId) {
+    if (!selectedUserId || !selectedProjectId) {
       setMessage("Both User ID and Project ID are required");
       return;
     }
 
-    if (isNaN(userId) || isNaN(projectId)) {
+    if (Number.isNaN(Number(selectedUserId)) || Number.isNaN(Number(selectedProjectId))) {
       setMessage("IDs must be numbers");
       return;
     }
@@ -32,28 +35,26 @@ export default function Team() {
       setMessage("");
 
       await addTeamMember({
-        userId: Number(userId),
-        projectId: Number(projectId),
+        userId: Number(selectedUserId),
+        projectId: Number(selectedProjectId),
       });
 
-      setMessage("Member added successfully ✅");
+      setMessage("Member added successfully");
       setUserId("");
       setProjectId("");
-
     } catch (err) {
       console.log(err);
-      setMessage(err || "Failed to add member ❌");
+      setMessage(err || "Failed to add member");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔐 Access control
   if (!admin) {
     return (
       <Layout>
         <h2 className="text-red-400 text-xl">
-          Access Denied 🚫 (Admin Only)
+          Access Denied (Admin Only)
         </h2>
       </Layout>
     );
@@ -62,7 +63,7 @@ export default function Team() {
   return (
     <Layout>
       <h1 className="text-3xl font-bold mb-6">
-        Team Management 👥
+        Team Management
       </h1>
 
       {message && (
@@ -72,29 +73,28 @@ export default function Team() {
       )}
 
       <div className="flex gap-3 flex-wrap">
-
-        {/* User ID */}
         <input
+          type="number"
           value={userId}
           placeholder="User ID"
           className="p-3 bg-gray-800 rounded border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
           onChange={(e) => setUserId(e.target.value)}
         />
 
-        {/* Project ID */}
         <input
+          type="number"
           value={projectId}
           placeholder="Project ID"
           className="p-3 bg-gray-800 rounded border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
           onChange={(e) => setProjectId(e.target.value)}
         />
 
-        {/* Button */}
         <button
+          type="button"
           onClick={addMember}
-          disabled={loading}
+          disabled={loading || !userId.trim() || !projectId.trim()}
           className={`px-4 rounded transition ${
-            loading
+            loading || !userId.trim() || !projectId.trim()
               ? "bg-gray-600 cursor-not-allowed"
               : "bg-purple-600 hover:bg-purple-700"
           }`}

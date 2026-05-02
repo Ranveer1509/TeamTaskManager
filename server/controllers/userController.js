@@ -1,30 +1,29 @@
-// controllers/userController.js
+```js
 const User = require("../models/User");
 
-// 🔒 GET all users (Admin only)
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll({
       attributes: ["id", "name", "email", "role"],
+      order: [["createdAt", "DESC"]],
     });
 
-    // ✅ FIX: send structured response
-    res.json({
+    return res.json({
       success: true,
+      count: users.length,
       data: users,
     });
-
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Failed to fetch users",
     });
   }
 };
 
-// 🔒 UPDATE user role (Admin only)
 exports.updateUserRole = async (req, res) => {
   try {
+    const { id } = req.params;
     const { role } = req.body;
 
     if (!["Admin", "Member"].includes(role)) {
@@ -34,7 +33,7 @@ exports.updateUserRole = async (req, res) => {
       });
     }
 
-    const user = await User.findByPk(req.params.id);
+    const user = await User.findByPk(id);
 
     if (!user) {
       return res.status(404).json({
@@ -46,15 +45,21 @@ exports.updateUserRole = async (req, res) => {
     user.role = role;
     await user.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: "Role updated successfully",
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
-
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Failed to update role",
     });
   }
 };
+```

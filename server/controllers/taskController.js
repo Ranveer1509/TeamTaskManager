@@ -3,12 +3,22 @@ const Project = require("../models/Project");
 
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, projectId, assignedTo, dueDate } = req.body;
+    let { title, description, projectId, assignedTo, dueDate } = req.body;
+
+    title = title?.trim();
+    description = description?.trim() || "";
 
     if (!title || !projectId) {
       return res.status(400).json({
         success: false,
         message: "Title and Project ID are required",
+      });
+    }
+
+    if (!req.user || !req.user.id || !req.user.role) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
       });
     }
 
@@ -30,46 +40,54 @@ exports.createTask = async (req, res) => {
     }
 
     const task = await Task.create({
-      title: title.trim(),
+      title,
       description,
       projectId,
       assignedTo: assignee,
-      dueDate,
+      dueDate: dueDate || null,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
+      message: "Task created successfully",
       data: task,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Failed to create task",
     });
   }
 };
 
 exports.getTasks = async (req, res) => {
   try {
-    let tasks;
-
-    if (req.user.role === "Admin") {
-      tasks = await Task.findAll();
-    } else {
-      tasks = await Task.findAll({
-        where: { assignedTo: req.user.id },
+    if (!req.user || !req.user.id || !req.user.role) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
       });
     }
 
-    res.json({
+    const where =
+      req.user.role === "Admin"
+        ? {}
+        : { assignedTo: req.user.id };
+
+    const tasks = await Task.findAll({
+      where,
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.json({
       success: true,
       count: tasks.length,
       data: tasks,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Failed to fetch tasks",
     });
   }
 };
@@ -77,9 +95,16 @@ exports.getTasks = async (req, res) => {
 exports.updateTaskStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, assignedTo, title, description, dueDate } = req.body;
+    let { status, assignedTo, title, description, dueDate } = req.body;
 
     const allowedStatus = ["Todo", "In Progress", "Done"];
+
+    if (!req.user || !req.user.id || !req.user.role) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
     if (status && !allowedStatus.includes(status)) {
       return res.status(400).json({
@@ -108,20 +133,21 @@ exports.updateTaskStatus = async (req, res) => {
     if (req.user.role === "Admin") {
       if (assignedTo !== undefined) task.assignedTo = assignedTo;
       if (title !== undefined) task.title = title.trim();
-      if (description !== undefined) task.description = description;
+      if (description !== undefined) task.description = description?.trim() || "";
       if (dueDate !== undefined) task.dueDate = dueDate || null;
     }
 
     await task.save();
 
-    res.json({
+    return res.json({
       success: true,
+      message: "Task updated successfully",
       data: task,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Failed to update task",
     });
   }
 };

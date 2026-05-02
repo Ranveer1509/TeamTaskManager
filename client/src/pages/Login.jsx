@@ -14,7 +14,9 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    if (!form.email || !form.password) {
+    const email = form.email.trim();
+
+    if (!email || !form.password) {
       setError("Email and password required");
       return;
     }
@@ -23,39 +25,38 @@ export default function Login() {
       setLoading(true);
       setError("");
 
-      const res = await login(form);
+      const res = await login({
+        email,
+        password: form.password,
+      });
 
-      if (res?.data?.token) {
-        // 🔐 Store auth data
+      if (res?.data?.token && res?.data?.user) {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("role", res.data.user.role);
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
         setError("Invalid credentials");
       }
-
     } catch (err) {
-      // ✅ Your API returns string error now
       setError(err || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // ⌨️ Enter key support
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleLogin();
+    if (e.key === "Enter" && !loading) {
+      handleLogin();
+    }
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-black">
-
-      <div className="backdrop-blur-lg bg-white/10 border border-white/20 p-8 rounded-2xl shadow-2xl w-96 text-white">
-
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-black px-4">
+      <div className="backdrop-blur-lg bg-white/10 border border-white/20 p-8 rounded-2xl shadow-2xl w-full max-w-sm text-white">
         <h2 className="text-3xl font-bold text-center mb-6">
-          Welcome Back 👋
+          Welcome Back
         </h2>
 
         {error && (
@@ -64,7 +65,6 @@ export default function Login() {
           </div>
         )}
 
-        {/* Email */}
         <input
           type="email"
           value={form.email}
@@ -76,7 +76,6 @@ export default function Login() {
           }
         />
 
-        {/* Password */}
         <input
           type="password"
           value={form.password}
@@ -88,8 +87,8 @@ export default function Login() {
           }
         />
 
-        {/* Button */}
         <button
+          type="button"
           onClick={handleLogin}
           disabled={loading}
           className={`w-full p-3 rounded-lg font-semibold transition ${
@@ -101,15 +100,15 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* Redirect */}
         <p className="text-sm text-center mt-4 text-gray-300">
           Don't have an account?{" "}
-          <span
+          <button
+            type="button"
             onClick={() => navigate("/signup")}
-            className="text-purple-400 cursor-pointer hover:underline"
+            className="text-purple-400 hover:underline"
           >
             Signup
-          </span>
+          </button>
         </p>
       </div>
     </div>

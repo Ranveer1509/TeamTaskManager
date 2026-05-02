@@ -2,41 +2,47 @@ import { useEffect, useState } from "react";
 import { getDashboard } from "../services/api";
 import Layout from "../components/Layout";
 
-export default function Dashboard() {
-  const [stats, setStats] = useState({
-    total: 0,
-    done: 0,
-    inProgress: 0,
-    todo: 0,
-    overdue: 0,
-  });
+const defaultStats = {
+  total: 0,
+  done: 0,
+  inProgress: 0,
+  todo: 0,
+  overdue: 0,
+};
 
+export default function Dashboard() {
+  const [stats, setStats] = useState(defaultStats);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let ignore = false;
+
     const fetchData = async () => {
       try {
-        setError("");
-        setLoading(true);
-
         const res = await getDashboard();
-        setStats(res?.data?.data || {
-          total: 0,
-          done: 0,
-          inProgress: 0,
-          todo: 0,
-          overdue: 0,
-        });
+
+        if (!ignore) {
+          setStats(res?.data?.data || defaultStats);
+        }
       } catch (err) {
         console.log(err);
-        setError("Failed to load dashboard");
+
+        if (!ignore) {
+          setError(err || "Failed to load dashboard");
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   return (
@@ -51,7 +57,7 @@ export default function Dashboard() {
       {loading ? (
         <p className="text-gray-400">Loading dashboard...</p>
       ) : (
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           <div className="bg-gray-800 p-6 rounded-xl shadow hover:scale-105 transition">
             <h2 className="text-gray-400">Total Tasks</h2>
             <p className="text-3xl font-bold mt-2">{stats.total}</p>
