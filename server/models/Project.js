@@ -1,30 +1,54 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db");
+const Project = require("../models/Project");
 
-const Project = sequelize.define("Project", {
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      notEmpty: true,
-    },
-  },
-  description: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  createdBy: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-}, {
-  timestamps: true, // createdAt, updatedAt
-});
+// CREATE PROJECT
+exports.createProject = async (req, res) => {
+  try {
+    let { name, description } = req.body;
 
-const Task = require("./Task");
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Project name is required",
+      });
+    }
 
-// Relationships
-Project.hasMany(Task, { foreignKey: "projectId", onDelete: "CASCADE" });
-Task.belongsTo(Project, { foreignKey: "projectId" });
+    const project = await Project.create({
+      name: name.trim(),
+      description: description || "",
+      createdBy: req.user.id, // ✅ FIX HERE
+    });
 
-module.exports = Project;
+    return res.status(201).json({
+      success: true,
+      data: project,
+    });
+
+  } catch (err) {
+    console.error("CREATE PROJECT ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// GET PROJECTS
+exports.getProjects = async (req, res) => {
+  try {
+    const projects = await Project.findAll();
+
+    return res.json({
+      success: true,
+      data: projects,
+    });
+
+  } catch (err) {
+    console.error("GET PROJECT ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
