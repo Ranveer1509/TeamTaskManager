@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import API from "../services/api";
 import { isAdmin } from "../utils/auth";
 import { getUsers, updateUserRole } from "../services/api";
 
 export default function Admin() {
-  const admin = isAdmin(); // ✅ call once
+  const admin = isAdmin();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [updating, setUpdating] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null); // ✅ FIX
 
   // Fetch users
   const fetchUsers = async () => {
@@ -18,12 +17,12 @@ export default function Admin() {
       setLoading(true);
       setError("");
 
-      const res = await API.get("/users");
-      setUsers(res.data.data); // ✅ FIX
+      const res = await getUsers();
+      setUsers(res.data.data);
 
     } catch (err) {
       console.log(err);
-      setError("Failed to load users");
+      setError(err || "Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -36,17 +35,16 @@ export default function Admin() {
   // Change role
   const changeRole = async (id, role) => {
     try {
-      setUpdating(true);
+      setUpdatingId(id); // ✅ only this row loading
 
-      await API.put(`/users/${id}`, { role });
-
+      await updateUserRole(id, role);
       fetchUsers();
 
     } catch (err) {
       console.log(err);
-      setError("Failed to update role");
+      setError(err || "Failed to update role");
     } finally {
-      setUpdating(false);
+      setUpdatingId(null);
     }
   };
 
@@ -89,7 +87,10 @@ export default function Admin() {
 
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-t border-gray-700 hover:bg-gray-700/40 transition">
+                <tr
+                  key={u.id}
+                  className="border-t border-gray-700 hover:bg-gray-700/40 transition"
+                >
                   <td className="p-3">{u.name}</td>
                   <td>{u.email}</td>
 
@@ -107,7 +108,7 @@ export default function Admin() {
 
                   <td>
                     <button
-                      disabled={updating}
+                      disabled={updatingId === u.id}
                       onClick={() =>
                         changeRole(
                           u.id,
@@ -115,12 +116,12 @@ export default function Admin() {
                         )
                       }
                       className={`px-3 py-1 rounded transition ${
-                        updating
+                        updatingId === u.id
                           ? "bg-gray-600 cursor-not-allowed"
                           : "bg-purple-600 hover:bg-purple-700"
                       }`}
                     >
-                      Toggle Role
+                      {updatingId === u.id ? "Updating..." : "Toggle Role"}
                     </button>
                   </td>
                 </tr>

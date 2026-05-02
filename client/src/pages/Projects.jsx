@@ -12,7 +12,7 @@ export default function Projects() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
-  const admin = isAdmin(); // ✅ role check
+  const admin = isAdmin();
 
   // Fetch projects
   const fetchProjects = async () => {
@@ -21,7 +21,10 @@ export default function Projects() {
       setError("");
 
       const res = await getProjects();
-      setProjects(res.data.data); //
+
+      // ✅ SAFE PARSE
+      const data = res?.data?.data || [];
+      setProjects(Array.isArray(data) ? data : []);
 
     } catch (err) {
       console.log(err);
@@ -35,7 +38,7 @@ export default function Projects() {
     fetchProjects();
   }, []);
 
-  // Create project (Admin only)
+  // Create project
   const handleCreate = async () => {
     if (!admin) {
       setError("Only Admin can create projects");
@@ -73,7 +76,7 @@ export default function Projects() {
         <p className="text-red-400 mb-4">{error}</p>
       )}
 
-      {/* 👑 Only Admin sees create section */}
+      {/* 👑 Admin Only */}
       {admin && (
         <div className="flex gap-3 mb-8">
           <input
@@ -85,9 +88,9 @@ export default function Projects() {
 
           <button
             onClick={handleCreate}
-            disabled={loading}
+            disabled={loading || !name.trim()} // ✅ UX FIX
             className={`px-5 rounded transition ${
-              loading
+              loading || !name.trim()
                 ? "bg-gray-600 cursor-not-allowed"
                 : "bg-purple-600 hover:bg-purple-700"
             }`}

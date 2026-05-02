@@ -8,23 +8,31 @@ const {
 
 const auth = require("../middleware/auth");
 
-// 🔐 Admin middleware
+// 🔐 Admin middleware (robust check)
 const isAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== "Admin") {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  if (req.user.role !== "Admin") {
     return res.status(403).json({
       success: false,
       message: "Access denied (Admin only)",
     });
   }
+
   next();
 };
 
 // ================= ROUTES =================
 
-// 👑 Get all users (Admin only)
+// 👑 Get all users
 router.get("/", auth, isAdmin, getAllUsers);
 
-// 👑 Update user role (Admin only)
+// 👑 Update role
 router.put("/:id", auth, isAdmin, updateUserRole);
 
 module.exports = router;
