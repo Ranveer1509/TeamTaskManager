@@ -1,64 +1,67 @@
 const Project = require("../models/Project");
 
-// CREATE PROJECT (Admin only already handled by middleware)
+// ================= CREATE PROJECT =================
 exports.createProject = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    let { name } = req.body;
 
-    // 1. Validation
-    if (!name) {
+    // 🔍 Validation
+    if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
         message: "Project name is required",
       });
     }
 
-    // 2. Create project
-    const project = await Project.create({
-      name,
-      description,
-      createdBy: req.user.id,
-    });
+    name = name.trim();
 
-    res.status(201).json({
+    // 🔁 Optional: prevent duplicate project names
+    const existing = await Project.findOne({ where: { name } });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Project already exists",
+      });
+    }
+
+    // ✅ Create project
+    const project = await Project.create({ name });
+
+    return res.status(201).json({
       success: true,
+      message: "Project created successfully",
       data: project,
     });
 
   } catch (err) {
-    res.status(500).json({
+    console.error("CREATE PROJECT ERROR:", err);
+
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: "Failed to create project",
     });
   }
 };
 
-// GET PROJECTS
+// ================= GET ALL PROJECTS =================
 exports.getProjects = async (req, res) => {
   try {
-    let projects;
+    const projects = await Project.findAll({
+      order: [["createdAt", "DESC"]], // 🔥 newest first
+    });
 
-    // Admin → see all
-    if (req.user.role === "Admin") {
-      projects = await Project.findAll();
-    } 
-    // Member → see only their projects
-    else {
-      projects = await Project.findAll({
-        where: { createdBy: req.user.id },
-      });
-    }
-
-    res.json({
+    return res.json({
       success: true,
       count: projects.length,
       data: projects,
     });
 
   } catch (err) {
-    res.status(500).json({
+    console.error("GET PROJECTS ERROR:", err);
+
+    return res.status(500).json({
       success: false,
-      message: err.message,
+      message: "Failed to fetch projects",
     });
   }
 };

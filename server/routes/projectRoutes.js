@@ -2,13 +2,25 @@ const express = require("express");
 const router = express.Router();
 
 const auth = require("../middleware/auth");
-const role = require("../middleware/role");
 const projectController = require("../controllers/projectController");
 
-// Create project (Admin only)
-router.post("/", auth, role(["Admin"]), projectController.createProject);
+// 🔐 Inline admin check (safer than external role middleware)
+const isAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "Admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Only Admin can create projects",
+    });
+  }
+  next();
+};
 
-// Get projects (Admin → all, Member → own handled in controller)
+// ================= ROUTES =================
+
+// ✅ Create project (Admin only)
+router.post("/", auth, isAdmin, projectController.createProject);
+
+// ✅ Get all projects
 router.get("/", auth, projectController.getProjects);
 
 module.exports = router;
