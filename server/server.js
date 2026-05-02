@@ -1,16 +1,15 @@
 require("dotenv").config(); // ✅ MUST be at top
 
 const express = require("express");
-const sequelize = require("./config/db");
+
+// ✅ IMPORTANT: load models + associations
+const { sequelize } = require("./models");
 
 const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const teamRoutes = require("./routes/teamRoutes");
-
-
-// ✅ NEW: User routes for Admin panel
 const userRoutes = require("./routes/userRoutes");
 
 const cors = require("cors");
@@ -32,17 +31,19 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/team", teamRoutes);
-
-// ✅ NEW: Admin panel APIs
-app.use("/api/users", userRoutes);
+app.use("/api/users", userRoutes); // ✅ admin routes
 
 // ================= PORT =================
 const PORT = process.env.PORT || 5000;
 
 // ================= START SERVER =================
-sequelize.sync().then(() => {
-  console.log("Database connected");
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+sequelize.sync({ alter: true }) // 🔥 important for fixing schema mismatch
+  .then(() => {
+    console.log("Database connected ✅");
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} 🚀`);
+    });
+  })
+  .catch((err) => {
+    console.error("DB ERROR ❌", err);
   });
-});
