@@ -39,10 +39,14 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+const syncOptions =
+  process.env.NODE_ENV === "production"
+    ? {}
+    : { alter: process.env.DB_SYNC_ALTER === "true" };
 
 sequelize
   .authenticate()
-  .then(() => sequelize.sync({ alter: true }))
+  .then(() => sequelize.sync(syncOptions))
   .then(() => {
     console.log("Database connected");
     app.listen(PORT, () => {
