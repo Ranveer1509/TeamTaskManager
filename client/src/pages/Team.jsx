@@ -1,15 +1,60 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import { addTeamMember } from "../services/api";
+import { addTeamMember, getTeamMembers } from "../services/api";
 import { isAdmin } from "../utils/auth";
 
 export default function Team() {
   const admin = isAdmin();
 
+  const [members, setMembers] = useState([]);
   const [userId, setUserId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(admin);
   const [message, setMessage] = useState("");
+
+  const fetchMembers = async () => {
+    try {
+      setFetching(true);
+      setMessage("");
+
+      const res = await getTeamMembers();
+      const data = res?.data?.data || [];
+      setMembers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.log(err);
+      setMessage(err || "Failed to load team members");
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!admin) return;
+
+    let ignore = false;
+
+    const loadMembers = async () => {
+      try {
+        const res = await getTeamMembers();
+        if (ignore) return;
+
+        const data = res?.data?.data || [];
+        setMembers(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.log(err);
+        if (!ignore) setMessage(err || "Failed to load team members");
+      } finally {
+        if (!ignore) setFetching(false);
+      }
+    };
+
+    loadMembers();
+
+    return () => {
+      ignore = true;
+    };
+  }, [admin]);
 
   const addMember = async () => {
     const selectedUserId = userId.trim();
@@ -25,7 +70,10 @@ export default function Team() {
       return;
     }
 
-    if (Number.isNaN(Number(selectedUserId)) || Number.isNaN(Number(selectedProjectId))) {
+    if (
+      Number.isNaN(Number(selectedUserId)) ||
+      Number.isNaN(Number(selectedProjectId))
+    ) {
       setMessage("IDs must be numbers");
       return;
     }
@@ -42,6 +90,7 @@ export default function Team() {
       setMessage("Member added successfully");
       setUserId("");
       setProjectId("");
+      await fetchMembers();
     } catch (err) {
       console.log(err);
       setMessage(err || "Failed to add member");
@@ -72,7 +121,7 @@ export default function Team() {
         </p>
       )}
 
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap mb-8">
         <input
           type="number"
           value={userId}
@@ -102,6 +151,49 @@ export default function Team() {
           {loading ? "Adding..." : "Add Member"}
         </button>
       </div>
+
+      {fetching ? (
+        <p className="text-gray-400">Loading team members...</p>
+      ) : members.length === 0 ? (
+        <p className="text-gray-400">No team members assigned yet</p>
+      ) : (
+        <div className="bg-gray-800 rounded-xl overflow-hidden shadow-lg">
+          <table className="w-full text-left">
+            <thead className="bg-gray-700 text-gray-300">
+              <tr>
+                <th className="p-3">User</th>
+                <th>Email</th>
+                <th>Project</th>
+                <th>Team Role</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {members.map((member) => (
+                <tr
+                  key={`${member.userId}-${member.projectId}`}
+                  className="border-t border-gray-700 hover:bg-gray-700/40 transition"
+                >
+                  <td className="p-3">
+                    {member.User?.name || `User #${member.userId}`}
+                  </td>
+                  <td>
+                    {member.User?.email || "N/A"}
+                  </td>
+                  <td>
+                    {member.Project?.name || `Project #${member.projectId}`}
+                  </td>
+                  <td>
+                    <span className="px-2 py-1 rounded text-sm bg-gray-600">
+                      {member.role}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Layout>
   );
 }

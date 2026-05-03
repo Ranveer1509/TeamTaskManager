@@ -59,6 +59,7 @@ export const getDashboard = () => API.get("/dashboard");
 
 // ================= TEAM =================
 
+export const getTeamMembers = () => API.get("/team");
 export const addTeamMember = (data) => API.post("/team/add", data);
 
 // ================= USERS (ADMIN) =================
