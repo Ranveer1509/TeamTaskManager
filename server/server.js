@@ -14,10 +14,18 @@ const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
+const configuredClientUrls = [
+  process.env.CLIENT_URL,
+  process.env.CLIENT_ORIGINS,
+]
+  .filter(Boolean)
+  .flatMap((urls) => urls.split(",").map((url) => url.trim()))
+  .filter(Boolean);
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  process.env.CLIENT_URL,
+  ...configuredClientUrls,
 ].filter(Boolean);
 
 app.use(cors({
