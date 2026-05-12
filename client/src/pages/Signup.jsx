@@ -1,17 +1,11 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { signup } from "../services/api";
-import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
   const handleSignup = async () => {
@@ -19,108 +13,122 @@ export default function Signup() {
     const email = form.email.trim();
 
     if (!name || !email || !form.password) {
-      setError("All fields are required");
+      setError("Name, email, and password are required.");
       return;
     }
 
     if (form.password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError("Password must be at least 6 characters.");
       return;
     }
 
     try {
       setError("");
       setLoading(true);
-
-      await signup({
-        name,
-        email,
-        password: form.password,
-      });
-
-      navigate("/", { replace: true });
+      await signup({ name, email, password: form.password });
+      navigate("/member-login", { replace: true });
     } catch (err) {
-      setError(err || "Signup failed");
+      setError(err || "Signup failed.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !loading) {
-      handleSignup();
-    }
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !loading) handleSignup();
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white px-4">
-      <div className="backdrop-blur-lg bg-white/10 border border-white/20 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
-        <h2 className="text-3xl font-bold mb-6 text-center">
-          Create Account
-        </h2>
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-slate-100">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-lg border border-slate-800 bg-white shadow-2xl lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="bg-cyan-700 p-8 text-white sm:p-10">
+          <p className="text-sm font-bold uppercase tracking-[0.22em] text-cyan-100">
+            Member onboarding
+          </p>
+          <h1 className="mt-4 text-4xl font-black leading-tight">Create your member account</h1>
+          <p className="mt-4 leading-7 text-cyan-50">
+            Member accounts can view assigned projects, update task status, and track deadlines.
+            Admin access is granted later from the Admin Panel.
+          </p>
 
-        {error && (
-          <div className="bg-red-500/20 text-red-300 p-2 rounded mb-4 text-sm text-center">
-            {error}
+          <div className="mt-8 space-y-3">
+            {["Simple work dashboard", "Clear task ownership", "Deadline visibility"].map((item) => (
+              <div key={item} className="rounded border border-cyan-300/40 bg-cyan-600/40 p-4 font-semibold">
+                {item}
+              </div>
+            ))}
           </div>
-        )}
+        </section>
 
-        <input
-          placeholder="Name"
-          value={form.name}
-          onKeyDown={handleKeyDown}
-          className="w-full p-3 mb-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
-        />
+        <section className="p-6 text-slate-950 sm:p-10">
+          <div className="mb-7">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-cyan-700">
+              Signup
+            </p>
+            <h2 className="mt-2 text-2xl font-black">Start as a member</h2>
+          </div>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onKeyDown={handleKeyDown}
-          className="w-full p-3 mb-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-          onChange={(e) =>
-            setForm({ ...form, email: e.target.value })
-          }
-        />
+          {error && (
+            <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+              {error}
+            </div>
+          )}
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onKeyDown={handleKeyDown}
-          className="w-full p-3 mb-4 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-          onChange={(e) =>
-            setForm({ ...form, password: e.target.value })
-          }
-        />
+          <label className="mb-2 block text-sm font-bold text-slate-700" htmlFor="name">
+            Full name
+          </label>
+          <input
+            id="name"
+            value={form.name}
+            onKeyDown={handleKeyDown}
+            className="mb-4 w-full rounded border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            placeholder="Ranveer Singh"
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
 
-        <button
-          type="button"
-          onClick={handleSignup}
-          disabled={loading}
-          className={`w-full p-3 rounded-lg font-semibold transition ${
-            loading
-              ? "bg-gray-600 cursor-not-allowed"
-              : "bg-gradient-to-r from-purple-500 to-indigo-500 hover:opacity-90"
-          }`}
-        >
-          {loading ? "Creating..." : "Signup"}
-        </button>
+          <label className="mb-2 block text-sm font-bold text-slate-700" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={form.email}
+            onKeyDown={handleKeyDown}
+            className="mb-4 w-full rounded border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            placeholder="you@example.com"
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
 
-        <p className="text-center mt-4 text-sm text-gray-300">
-          Already have an account?{" "}
+          <label className="mb-2 block text-sm font-bold text-slate-700" htmlFor="password">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={form.password}
+            onKeyDown={handleKeyDown}
+            className="mb-5 w-full rounded border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            placeholder="Minimum 6 characters"
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+
           <button
             type="button"
-            onClick={() => navigate("/")}
-            className="hover:text-white"
+            onClick={handleSignup}
+            disabled={loading}
+            className="w-full rounded bg-slate-950 px-4 py-3 font-bold text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
-            Login
+            {loading ? "Creating account..." : "Create Member Account"}
           </button>
-        </p>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Already registered?{" "}
+            <Link to="/member-login" className="font-bold text-cyan-700 hover:text-cyan-900">
+              Go to member login
+            </Link>
+          </p>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

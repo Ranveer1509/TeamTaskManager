@@ -26,8 +26,8 @@ API.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.clear();
 
-      if (window.location.pathname !== "/") {
-        window.location.href = "/";
+      if (!window.location.pathname.includes("login")) {
+        window.location.href = "/member-login";
       }
     }
 

@@ -61,9 +61,10 @@ exports.signup = async (req, res) => {
 // ================= LOGIN =================
 exports.login = async (req, res) => {
   try {
-    let { email, password } = req.body;
+    let { email, password, role } = req.body;
 
     email = email?.trim().toLowerCase();
+    role = role?.trim();
 
     if (!email || !password) {
       return res.status(400).json({
@@ -85,6 +86,20 @@ exports.login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
+      });
+    }
+
+    if (role && !["Admin", "Member"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid login type",
+      });
+    }
+
+    if (role && user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        message: `This account is registered as ${user.role}. Please use the ${user.role} login.`,
       });
     }
 

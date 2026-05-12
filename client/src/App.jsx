@@ -9,7 +9,7 @@ import Admin from "./pages/Admin";
 import { isLoggedIn, isAdmin } from "./utils/auth";
 
 function PrivateRoute({ children }) {
-  return isLoggedIn() ? children : <Navigate to="/" replace />;
+  return isLoggedIn() ? children : <Navigate to="/member-login" replace />;
 }
 
 function PublicRoute({ children }) {
@@ -18,7 +18,7 @@ function PublicRoute({ children }) {
 
 function AdminRoute({ children }) {
   if (!isLoggedIn()) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   return isAdmin() ? children : <Navigate to="/dashboard" replace />;
@@ -29,9 +29,23 @@ function App() {
     <Routes>
       <Route
         path="/"
+        element={<Navigate to="/member-login" replace />}
+      />
+
+      <Route
+        path="/member-login"
         element={
           <PublicRoute>
-            <Login />
+            <Login roleMode="Member" />
+          </PublicRoute>
+        }
+      />
+
+      <Route
+        path="/admin-login"
+        element={
+          <PublicRoute>
+            <Login roleMode="Admin" />
           </PublicRoute>
         }
       />

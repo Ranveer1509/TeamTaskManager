@@ -20,3 +20,5 @@ export const logout = () => {
   localStorage.removeItem("role");
   localStorage.removeItem("user");
 };
+
+export const getRoleHome = () => (isAdmin() ? "/admin" : "/dashboard");
